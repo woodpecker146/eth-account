@@ -206,7 +206,8 @@ def _encode_data(primary_type, types, data):
             yield "bytes32", hashed_value
         elif field["type"] in types:
             # This means that this type is a user defined type
-            hashed_value = keccak(primitive=encode_data(field["type"], types, value))
+            hashed_value = keccak(primitive=encode_data(
+                field["type"], types, value))
             yield "bytes32", hashed_value
         elif is_array_type(field["type"]):
             # Get the dimensions from the value
@@ -229,10 +230,15 @@ def _encode_data(primary_type, types, data):
                     )
 
             array_items = flatten_multidimensional_array(value)
-            array_items_encoding = [
-                encode_data(parsed_type.base, types, array_item)
-                for array_item in array_items
-            ]
+            if parsed_type.base in types.keys():
+                array_items_encoding = [
+                    encode_data(parsed_type.base, types, array_item)
+                    for array_item in array_items
+                ]
+            else:
+                array_items_encoding = [encode_abi((parsed_type.base,), (el,))
+                                        for el in array_items]
+
             concatenated_array_encodings = b''.join(array_items_encoding)
             hashed_value = keccak(concatenated_array_encodings)
             yield "bytes32", hashed_value
